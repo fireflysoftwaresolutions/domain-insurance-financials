@@ -44,6 +44,14 @@ public final class PremiumScheduleSagaConstants {
     public static final String CTX_RECORD = "premiumScheduleIdRecord";
     public static final String CTX_PREVIOUS_STATUS = "previousPremiumScheduleStatus";
 
+
+    public static final String SAGA_UPDATE_RECORD = "UpdatePremiumScheduleSaga";
+    public static final String STEP_RETRIEVE_FOR_UPDATE = "retrievePremiumScheduleForUpdate";
+    public static final String STEP_UPDATE_RECORD = "updatePremiumSchedule";
+    public static final String COMPENSATE_RESTORE_RECORD = "restorePremiumSchedule";
+    public static final String EVENT_RECORD_UPDATED = "premium-schedules.updated";
+    public static final String CTX_PREVIOUS_RECORD = "previousPremiumScheduleRecord";
+
     private PremiumScheduleSagaConstants() {
     }
 }

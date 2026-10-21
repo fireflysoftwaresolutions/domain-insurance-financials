@@ -18,8 +18,10 @@ package io.fireflysoftware.domain.insurance.financials.web.controllers;
 
 import io.fireflysoftware.core.insurance.financials.sdk.model.PremiumScheduleDTO;
 import io.fireflysoftware.domain.insurance.financials.core.commands.CreatePremiumScheduleCommand;
+import io.fireflysoftware.domain.insurance.financials.core.commands.UpdatePremiumScheduleCommand;
 import io.fireflysoftware.domain.insurance.financials.core.commands.UpdatePremiumScheduleStatusCommand;
 import io.fireflysoftware.domain.insurance.financials.core.services.FinancialsService;
+import io.fireflysoftware.domain.insurance.financials.interfaces.dtos.ReasonRequest;
 import io.fireflysoftware.domain.insurance.financials.interfaces.dtos.StatusChangeRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -31,6 +33,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -98,5 +101,65 @@ public class PremiumSchedulesController {
         return service.updateStatus(new UpdatePremiumScheduleStatusCommand(premiumScheduleId, request.getStatus(), request.getStatusReason()))
                 .map(ResponseEntity::ok)
                 .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
+    }
+
+    @Operation(summary = "Update premium schedule", description = "Runs the update saga against core-insurance-financials. Status is left unchanged.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Updated",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = PremiumScheduleDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Not found", content = @Content)
+    })
+    @PutMapping(value = "/{premiumScheduleId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<ResponseEntity<PremiumScheduleDTO>> update(
+            @Parameter(description = "Core identifier", required = true) @PathVariable UUID premiumScheduleId,
+            @RequestBody PremiumScheduleDTO body) {
+        return service.update(new UpdatePremiumScheduleCommand(premiumScheduleId, body))
+                .map(ResponseEntity::ok)
+                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
+    }
+
+    @Operation(summary = "Cancel premium schedule", description = "Cancels a premium schedule through the financials core.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Updated",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = PremiumScheduleDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Not found", content = @Content)
+    })
+    @PostMapping(value = "/{premiumScheduleId}/cancel", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<ResponseEntity<PremiumScheduleDTO>> cancel(
+            @Parameter(description = "Core identifier", required = true) @PathVariable UUID premiumScheduleId,
+            @RequestBody ReasonRequest request) {
+        return service.cancel(premiumScheduleId, request.getStatusReason())
+                .map(ResponseEntity::ok)
+                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
+    }
+
+    @Operation(summary = "Complete premium schedule", description = "Completes a premium schedule through the financials core.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Updated",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = PremiumScheduleDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Not found", content = @Content)
+    })
+    @PostMapping(value = "/{premiumScheduleId}/complete", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<ResponseEntity<PremiumScheduleDTO>> complete(
+            @Parameter(description = "Core identifier", required = true) @PathVariable UUID premiumScheduleId,
+            @RequestBody ReasonRequest request) {
+        return service.complete(premiumScheduleId, request.getStatusReason())
+                .map(ResponseEntity::ok)
+                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
+    }
+
+    @Operation(summary = "Remove premium schedule", description = "Deletes the record through core-insurance-financials when that core allows removal.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Removed"),
+            @ApiResponse(responseCode = "404", description = "Not found", content = @Content)
+    })
+    @DeleteMapping("/{premiumScheduleId}")
+    public Mono<ResponseEntity<Void>> remove(
+            @Parameter(description = "Core identifier", required = true) @PathVariable UUID premiumScheduleId) {
+        return service.remove(premiumScheduleId)
+                .thenReturn(ResponseEntity.noContent().build());
     }
 }

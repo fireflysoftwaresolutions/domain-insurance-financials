@@ -18,6 +18,7 @@ package io.fireflysoftware.domain.insurance.financials.web.controllers;
 
 import io.fireflysoftware.core.insurance.financials.sdk.model.PremiumScheduleDTO;
 import io.fireflysoftware.domain.insurance.financials.core.services.FinancialsService;
+import io.fireflysoftware.domain.insurance.financials.interfaces.dtos.ReasonRequest;
 import io.fireflysoftware.domain.insurance.financials.interfaces.dtos.StatusChangeRequest;
 import org.fireflyframework.web.error.config.ErrorHandlingProperties;
 import org.fireflyframework.web.error.converter.ExceptionConverterService;
@@ -107,5 +108,46 @@ class PremiumSchedulesControllerTest {
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(PremiumScheduleDTO.class);
+    }
+
+    @Test
+    void update_returns200() {
+        UUID id = UUID.randomUUID();
+        when(service.update(any())).thenReturn(Mono.just(new PremiumScheduleDTO(id)));
+
+        webTestClient.put()
+                .uri("/api/v1/premium-schedules/{id}", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new PremiumScheduleDTO())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(PremiumScheduleDTO.class);
+    }
+
+    @Test
+    void cancel_returns200() {
+        UUID id = UUID.randomUUID();
+        when(service.cancel(any(), any())).thenReturn(Mono.just(new PremiumScheduleDTO(id)));
+        ReasonRequest request = new ReasonRequest();
+        request.setStatusReason("Caller request");
+
+        webTestClient.post()
+                .uri("/api/v1/premium-schedules/{id}/cancel", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(PremiumScheduleDTO.class);
+    }
+
+    @Test
+    void remove_returns204() {
+        UUID id = UUID.randomUUID();
+        when(service.remove(id)).thenReturn(Mono.empty());
+
+        webTestClient.delete()
+                .uri("/api/v1/premium-schedules/{id}", id)
+                .exchange()
+                .expectStatus().isNoContent();
     }
 }

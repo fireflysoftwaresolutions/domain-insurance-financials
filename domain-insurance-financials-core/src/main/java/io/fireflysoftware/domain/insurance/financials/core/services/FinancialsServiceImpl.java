@@ -20,7 +20,10 @@ import io.fireflysoftware.core.insurance.financials.sdk.model.PremiumScheduleDTO
 import io.fireflysoftware.domain.insurance.financials.core.commands.CreatePremiumScheduleCommand;
 import io.fireflysoftware.domain.insurance.financials.core.commands.GetPremiumScheduleQuery;
 import io.fireflysoftware.domain.insurance.financials.core.commands.UpdatePremiumScheduleStatusCommand;
+import io.fireflysoftware.domain.insurance.financials.core.commands.UpdatePremiumScheduleCommand;
+import io.fireflysoftware.domain.insurance.financials.core.commands.RemovePremiumScheduleCommand;
 import io.fireflysoftware.domain.insurance.financials.core.constants.PremiumScheduleSagaConstants;
+import org.fireflyframework.cqrs.command.CommandBus;
 import org.fireflyframework.cqrs.query.QueryBus;
 import org.fireflyframework.orchestration.saga.engine.SagaEngine;
 import org.fireflyframework.orchestration.saga.engine.SagaResult;
@@ -38,10 +41,12 @@ public class FinancialsServiceImpl implements FinancialsService {
 
     private final SagaEngine sagaEngine;
     private final QueryBus queryBus;
+    private final CommandBus commandBus;
 
-    public FinancialsServiceImpl(SagaEngine sagaEngine, QueryBus queryBus) {
+    public FinancialsServiceImpl(SagaEngine sagaEngine, QueryBus queryBus, CommandBus commandBus) {
         this.sagaEngine = sagaEngine;
         this.queryBus = queryBus;
+        this.commandBus = commandBus;
     }
 
     @Override
@@ -66,6 +71,34 @@ public class FinancialsServiceImpl implements FinancialsService {
     @Override
     public Mono<PremiumScheduleDTO> get(UUID premiumScheduleId) {
         return queryBus.query(new GetPremiumScheduleQuery(premiumScheduleId));
+    }
+
+
+    @Override
+    public Mono<PremiumScheduleDTO> update(UpdatePremiumScheduleCommand command) {
+        StepInputs inputs = StepInputs.builder()
+                .forStepId(PremiumScheduleSagaConstants.STEP_RETRIEVE_FOR_UPDATE, new GetPremiumScheduleQuery(command.premiumScheduleId()))
+                .forStepId(PremiumScheduleSagaConstants.STEP_UPDATE_RECORD, command)
+                .build();
+        return sagaEngine.execute(PremiumScheduleSagaConstants.SAGA_UPDATE_RECORD, inputs)
+                .flatMap(result -> outcome(result, PremiumScheduleSagaConstants.STEP_UPDATE_RECORD, PremiumScheduleDTO.class));
+    }
+
+    @Override
+    public Mono<PremiumScheduleDTO> cancel(UUID premiumScheduleId, String statusReason) {
+        return updateStatus(new UpdatePremiumScheduleStatusCommand(premiumScheduleId, "CANCELLED", statusReason));
+    }
+
+    @Override
+    public Mono<PremiumScheduleDTO> complete(UUID premiumScheduleId, String statusReason) {
+        return updateStatus(new UpdatePremiumScheduleStatusCommand(premiumScheduleId, "COMPLETED", statusReason));
+    }
+
+    @Override
+    public Mono<Void> remove(UUID premiumScheduleId) {
+        return get(premiumScheduleId)
+                .switchIfEmpty(Mono.error(new IllegalStateException("Premium schedule was not found")))
+                .flatMap(current -> commandBus.send(new RemovePremiumScheduleCommand(premiumScheduleId)));
     }
 
     private static <T> Mono<T> outcome(SagaResult result, String stepId, Class<T> type) {

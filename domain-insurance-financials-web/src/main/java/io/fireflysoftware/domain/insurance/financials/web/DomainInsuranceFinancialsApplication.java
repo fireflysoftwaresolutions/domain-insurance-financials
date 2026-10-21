@@ -38,7 +38,7 @@ import org.springframework.web.reactive.config.EnableWebFlux;
 info = @Info(
         title = "Domain Insurance Financials API",
         version = "1.0.0",
-        description = "Orchestrates premium schedule records through core-insurance-financials. It records premium schedule status through the financials core. It does not disburse indemnity, refund premium, post commission, or certify IFRS 17 or Solvency II.",
+        description = "Orchestrates premium schedule records through core-insurance-financials. It creates, updates, changes status, and closes premium schedules through the financials core. It does not disburse indemnity, refund premium, post commission, or certify IFRS 17 or Solvency II.",
         contact = @Contact(
                 name = "Firefly Software Foundation",
                 email = "dev@fireflysoftware.io"

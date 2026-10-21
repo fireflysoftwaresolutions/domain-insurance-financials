@@ -19,6 +19,7 @@ package io.fireflysoftware.domain.insurance.financials.core.services;
 import io.fireflysoftware.core.insurance.financials.sdk.model.PremiumScheduleDTO;
 import io.fireflysoftware.domain.insurance.financials.core.commands.CreatePremiumScheduleCommand;
 import io.fireflysoftware.domain.insurance.financials.core.commands.UpdatePremiumScheduleStatusCommand;
+import io.fireflysoftware.domain.insurance.financials.core.commands.UpdatePremiumScheduleCommand;
 import reactor.core.publisher.Mono;
 
 import java.util.UUID;
@@ -51,4 +52,38 @@ public interface FinancialsService {
      * @return the record, or empty when the core has none
      */
     Mono<PremiumScheduleDTO> get(UUID premiumScheduleId);
+
+    /**
+     * Updates fields on a premium schedule and leaves its status unchanged.
+     *
+     * @param command the update
+     * @return the record returned by the core
+     */
+    Mono<PremiumScheduleDTO> update(UpdatePremiumScheduleCommand command);
+
+    /**
+     * Cancels a premium schedule through the financials core.
+     *
+     * @param premiumScheduleId the core identifier
+     * @param statusReason optional reason stored by the status saga when the core keeps one
+     * @return the updated record
+     */
+    Mono<PremiumScheduleDTO> cancel(UUID premiumScheduleId, String statusReason);
+
+    /**
+     * Completes a premium schedule through the financials core.
+     *
+     * @param premiumScheduleId the core identifier
+     * @param statusReason optional reason stored by the status saga when the core keeps one
+     * @return the updated record
+     */
+    Mono<PremiumScheduleDTO> complete(UUID premiumScheduleId, String statusReason);
+
+    /**
+     * Deletes a premium schedule when the core lifecycle allows removal.
+     *
+     * @param premiumScheduleId the core identifier
+     * @return completion when the core has deleted the record
+     */
+    Mono<Void> remove(UUID premiumScheduleId);
 }

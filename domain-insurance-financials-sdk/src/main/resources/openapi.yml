@@ -2,9 +2,9 @@ openapi: 3.0.1
 info:
   title: Domain Insurance Financials API
   description: "Orchestrates premium schedule records through core-insurance-financials.\
-    \ It records premium schedule status through the financials core. It does not\
-    \ disburse indemnity, refund premium, post commission, or certify IFRS 17 or Solvency\
-    \ II."
+    \ It creates, updates, changes status, and closes premium schedules through the\
+    \ financials core. It does not disburse indemnity, refund premium, post commission,\
+    \ or certify IFRS 17 or Solvency II."
   contact:
     name: Firefly Software Foundation
     email: dev@fireflysoftware.io
@@ -55,36 +55,6 @@ paths:
                 $ref: "#/components/schemas/PremiumScheduleDTO"
         "404":
           description: Not found
-  /api/v1/premium-schedules:
-    post:
-      tags:
-      - Financials
-      summary: Create premium schedule
-      description: Runs the register saga against core-insurance-financials.
-      operationId: create
-      parameters:
-      - name: X-Idempotency-Key
-        in: header
-        description: "Unique key for idempotent requests. If provided, ensures that\
-          \ identical requests with the same key will only be processed once."
-        required: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PremiumScheduleDTO"
-        required: true
-      responses:
-        "201":
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PremiumScheduleDTO"
-        "400":
-          description: Invalid request
   /api/v1/premium-schedules/{premiumScheduleId}:
     get:
       tags:
@@ -116,6 +86,174 @@ paths:
                 $ref: "#/components/schemas/PremiumScheduleDTO"
         "404":
           description: Not found
+    put:
+      tags:
+      - Financials
+      summary: Update premium schedule
+      description: Runs the update saga against core-insurance-financials. Status
+        is left unchanged.
+      operationId: update
+      parameters:
+      - name: premiumScheduleId
+        in: path
+        description: Core identifier
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-Idempotency-Key
+        in: header
+        description: "Unique key for idempotent requests. If provided, ensures that\
+          \ identical requests with the same key will only be processed once."
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PremiumScheduleDTO"
+        required: true
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PremiumScheduleDTO"
+        "404":
+          description: Not found
+    delete:
+      tags:
+      - Financials
+      summary: Remove premium schedule
+      description: Deletes the record through core-insurance-financials when that
+        core allows removal.
+      operationId: remove
+      parameters:
+      - name: premiumScheduleId
+        in: path
+        description: Core identifier
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-Idempotency-Key
+        in: header
+        description: "Unique key for idempotent requests. If provided, ensures that\
+          \ identical requests with the same key will only be processed once."
+        required: false
+        schema:
+          type: string
+      responses:
+        "204":
+          description: Removed
+        "404":
+          description: Not found
+  /api/v1/premium-schedules/{premiumScheduleId}/complete:
+    post:
+      tags:
+      - Financials
+      summary: Complete premium schedule
+      description: Completes a premium schedule through the financials core.
+      operationId: complete
+      parameters:
+      - name: premiumScheduleId
+        in: path
+        description: Core identifier
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-Idempotency-Key
+        in: header
+        description: "Unique key for idempotent requests. If provided, ensures that\
+          \ identical requests with the same key will only be processed once."
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReasonRequest"
+        required: true
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PremiumScheduleDTO"
+        "404":
+          description: Not found
+  /api/v1/premium-schedules/{premiumScheduleId}/cancel:
+    post:
+      tags:
+      - Financials
+      summary: Cancel premium schedule
+      description: Cancels a premium schedule through the financials core.
+      operationId: cancel
+      parameters:
+      - name: premiumScheduleId
+        in: path
+        description: Core identifier
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-Idempotency-Key
+        in: header
+        description: "Unique key for idempotent requests. If provided, ensures that\
+          \ identical requests with the same key will only be processed once."
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReasonRequest"
+        required: true
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PremiumScheduleDTO"
+        "404":
+          description: Not found
+  /api/v1/premium-schedules:
+    post:
+      tags:
+      - Financials
+      summary: Create premium schedule
+      description: Runs the register saga against core-insurance-financials.
+      operationId: create
+      parameters:
+      - name: X-Idempotency-Key
+        in: header
+        description: "Unique key for idempotent requests. If provided, ensures that\
+          \ identical requests with the same key will only be processed once."
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PremiumScheduleDTO"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PremiumScheduleDTO"
+        "400":
+          description: Invalid request
 components:
   schemas:
     StatusChangeRequest:
@@ -163,3 +301,8 @@ components:
           type: string
           format: date-time
           nullable: true
+    ReasonRequest:
+      type: object
+      properties:
+        statusReason:
+          type: string
