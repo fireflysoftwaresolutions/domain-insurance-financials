@@ -1,0 +1,165 @@
+openapi: 3.0.1
+info:
+  title: Domain Insurance Financials API
+  description: "Orchestrates premium schedule records through core-insurance-financials.\
+    \ It records premium schedule status through the financials core. It does not\
+    \ disburse indemnity, refund premium, post commission, or certify IFRS 17 or Solvency\
+    \ II."
+  contact:
+    name: Firefly Software Foundation
+    email: dev@fireflysoftware.io
+  version: 1.0.0
+servers:
+- url: https://openplatform.fireflysoftware.io/domain-insurance-financials
+  description: Development Environment
+- url: /
+  description: Local Development Environment
+tags:
+- name: Financials
+  description: Domain orchestration for premium schedule records
+paths:
+  /api/v1/premium-schedules/{premiumScheduleId}/status:
+    put:
+      tags:
+      - Financials
+      summary: Update status
+      description: Runs the status saga against core-insurance-financials.
+      operationId: updateStatus
+      parameters:
+      - name: premiumScheduleId
+        in: path
+        description: Core identifier
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-Idempotency-Key
+        in: header
+        description: "Unique key for idempotent requests. If provided, ensures that\
+          \ identical requests with the same key will only be processed once."
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusChangeRequest"
+        required: true
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PremiumScheduleDTO"
+        "404":
+          description: Not found
+  /api/v1/premium-schedules:
+    post:
+      tags:
+      - Financials
+      summary: Create premium schedule
+      description: Runs the register saga against core-insurance-financials.
+      operationId: create
+      parameters:
+      - name: X-Idempotency-Key
+        in: header
+        description: "Unique key for idempotent requests. If provided, ensures that\
+          \ identical requests with the same key will only be processed once."
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PremiumScheduleDTO"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PremiumScheduleDTO"
+        "400":
+          description: Invalid request
+  /api/v1/premium-schedules/{premiumScheduleId}:
+    get:
+      tags:
+      - Financials
+      summary: Get premium schedule
+      description: Reads one record from core-insurance-financials.
+      operationId: get
+      parameters:
+      - name: premiumScheduleId
+        in: path
+        description: Core identifier
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-Idempotency-Key
+        in: header
+        description: "Unique key for idempotent requests. If provided, ensures that\
+          \ identical requests with the same key will only be processed once."
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PremiumScheduleDTO"
+        "404":
+          description: Not found
+components:
+  schemas:
+    StatusChangeRequest:
+      type: object
+      properties:
+        status:
+          type: string
+        statusReason:
+          type: string
+    PremiumScheduleDTO:
+      required:
+      - policyId
+      - scheduleStatus
+      - tenantId
+      type: object
+      properties:
+        premiumScheduleId:
+          type: string
+          format: uuid
+          nullable: true
+        tenantId:
+          type: string
+          format: uuid
+        policyId:
+          type: string
+          format: uuid
+        contractId:
+          type: string
+          format: uuid
+          nullable: true
+        currency:
+          type: string
+          nullable: true
+        scheduleStatus:
+          type: string
+          enum:
+          - ACTIVE
+          - COMPLETED
+          - CANCELLED
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
